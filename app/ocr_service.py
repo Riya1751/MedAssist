@@ -14,7 +14,7 @@ def ocr_image(img) -> tuple[str, float]:
     vision-LLM fallback in main.py.
     """
     data = pytesseract.image_to_data(img, config=TESS_CONFIG, lang="eng",
-                                     output_type=Output.DICT, timeout=90)
+                                     output_type=Output.DICT, timeout=15)
     lines: dict[tuple, list[str]] = {}
     confs: list[float] = []
     for i, word in enumerate(data["text"]):
