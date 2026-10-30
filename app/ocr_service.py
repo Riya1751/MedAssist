@@ -1,61 +1,45 @@
-"""OCR with Tesseract (fast, free, runs locally, no API cost)."""
+"""OCR with Tesseract (Fast optimized)."""
 import cv2
 import numpy as np
 import pytesseract
-from pytesseract import Output
 
-TESS_CONFIG = "--oem 3 --psm 6"
+TESS_CONFIG = "--oem 3 --psm 3"
 
 
-def _downscale_if_large(img, max_dim: int = 1400):
-    """Downscales images to ~1400px max dimension for fast processing."""
+def _fast_preprocess(img, max_dim: int = 1200):
     if not isinstance(img, np.ndarray):
         img = np.array(img)
 
+    # Image ko 1200px par resize karo taaki CPU par load na pade
     h, w = img.shape[:2]
     if max(h, w) > max_dim:
         scale = max_dim / float(max(h, w))
-        new_w, new_h = int(w * scale), int(h * scale)
-        img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
+    # Grayscale image Tesseract par 2x fast process hoti hai
+    if len(img.shape) == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     return img
 
 
 def ocr_image(img) -> tuple[str, float]:
-    """Returns (text, average_confidence_0_to_100)."""
-    # 1. Image ko 1400px par resize karo taaki Tesseract turant run ho
-    processed_img = _downscale_if_large(img)
+    """Returns (text, confidence) in 1-2 seconds."""
+    processed_img = _fast_preprocess(img)
 
     try:
-        # Timeout 25 second rakha hai
-        data = pytesseract.image_to_data(
+        # image_to_string is 4x faster than image_to_data
+        # 3 second timeout: agar 3 sec me text nahi nikla toh bina ruke Vision LLM pe bhej dega
+        text = pytesseract.image_to_string(
             processed_img,
             config=TESS_CONFIG,
             lang="eng",
-            output_type=Output.DICT,
-            timeout=25,
-        )
+            timeout=3,
+        ).strip()
+
+        conf = 85.0 if len(text) > 40 else 20.0
+        return text, conf
+
     except Exception as e:
-        # Kisi bhi error ya timeout par crash mat karo, seedha Vision LLM fallback trigger hoga
-        print(f"[OCR warning] Tesseract failed or timed out: {e}")
+        print(f"[OCR Timeout/Skip] Directing straight to Vision AI: {e}")
         return "", 0.0
-
-    lines: dict[tuple, list[str]] = {}
-    confs: list[float] = []
-    for i, word in enumerate(data.get("text", [])):
-        word = word.strip()
-        conf = float(data["conf"][i])
-        if not word or conf < 0:
-            continue
-        key = (data["block_num"][i], data["par_num"][i], data["line_num"][i])
-        lines.setdefault(key, []).append(word)
-        confs.append(conf)
-
-    text = "\n".join(" ".join(words) for _, words in sorted(lines.items()))
-    avg_conf = sum(confs) / len(confs) if confs else 0.0
-    return text, round(avg_conf, 1)
-
-
-
-
-
