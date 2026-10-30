@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+python-multipart
+sqlalchemy>=2.0
+pymysql
+cryptography          # required by PyMySQL for MySQL 8 default auth
+python-dotenv
+openai>=1.40          # used as a vendor-neutral client (any OpenAI-compatible endpoint)
+opencv-python-headless
+numpy
+pytesseract
+pymupdf               # PDF reading, no system dependency needed
