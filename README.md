@@ -10,4 +10,4 @@ See the terminal commands in the chat reply. Quick start:
     cp .env.example .env        # then edit AI_API_KEY / AI_MODEL_NAME / AI_BASE_URL
     uvicorn app.main:app --reload --port 8000
 
-Open http://127.0.0.1:8000/docs for the interactive API tester.
+Open https://medassist-2qmc.onrender.com/ for the interactive API tester.
