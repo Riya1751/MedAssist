@@ -23,6 +23,8 @@ db_url = URL.create("mysql+pymysql", username=config.DB_USER, password=config.DB
                     query={"charset": "utf8mb4"})
 engine = create_engine(db_url, pool_pre_ping=True, pool_recycle=3600, pool_size=5)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+def init_db():
+    Base.metadata.create_all(bind=engine)
 
 
 class Base(DeclarativeBase):

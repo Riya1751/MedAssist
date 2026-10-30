@@ -7,6 +7,7 @@ Async strategy (why the server never "freezes"):
 So while one user waits for the LLM, other requests are still served.
 """
 import asyncio
+from contextlib import asynccontextmanager
 import logging
 import time
 import uuid
@@ -25,6 +26,11 @@ from .profile import profile_for_ai
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("medassist")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db.init_db()
+    yield
 
 app = FastAPI(title="MedAssist API", version="1.0")
 app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS,
